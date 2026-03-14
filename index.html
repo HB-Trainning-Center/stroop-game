@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🧠 스트룹 테스트</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&family=Orbitron:wght@700;900&display=swap');
+
+  :root {
+    --bg:#06060c;--card:#0e0e1a;--border:#1a1a2e;--surface:#12121f;
+    --text:#e8e8f0;--dim:#5a5a72;--accent:#7c5cff;--accent2:#5c3cdf;
+    --gold:#ffd740;--silver:#b0bec5;--bronze:#ff8a65;--green:#00e676;--red:#ff1744;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{width:100%;height:100%;font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;touch-action:manipulation;}
+  body{display:flex;align-items:center;justify-content:center;}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 15% 80%,rgba(124,92,255,.07) 0%,transparent 50%),radial-gradient(ellipse at 85% 20%,rgba(0,230,118,.05) 0%,transparent 50%);pointer-events:none;z-index:0;}
+
+  .container{position:relative;z-index:1;width:100%;max-width:500px;min-height:100dvh;display:flex;flex-direction:column;padding:16px;}
+  .container.wide{max-width:960px;}
+  .screen{display:none;flex-direction:column;flex:1;}.screen.active{display:flex;}
+
+  /* Shared */
+  .btn-primary{width:100%;max-width:340px;padding:16px;border:none;border-radius:14px;font-family:'Black Han Sans',sans-serif;font-size:1.2rem;color:#fff;background:linear-gradient(135deg,#7c5cff,#5c3cdf);cursor:pointer;letter-spacing:2px;box-shadow:0 4px 20px rgba(124,92,255,.4);transition:transform .1s;}
+  .btn-primary:active{transform:scale(.97);}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+  .btn-secondary{padding:14px 20px;border:2px solid var(--accent);border-radius:12px;background:transparent;color:var(--accent);font-family:'Black Han Sans',sans-serif;font-size:.95rem;cursor:pointer;letter-spacing:1px;transition:transform .1s;}
+  .btn-secondary:active{transform:scale(.97);}
+  .input-f{padding:14px 16px;background:var(--card);border:2px solid var(--border);border-radius:12px;color:var(--text);font-size:1rem;font-weight:700;outline:none;font-family:'Noto Sans KR',sans-serif;transition:border-color .2s;width:100%;}
+  .input-f:focus{border-color:var(--accent);}
+  .input-f::placeholder{color:var(--dim);font-weight:400;}
+  .s-btn{padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--dim);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s;}
+  .s-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:10px 20px;background:var(--card);border:1px solid var(--green);border-radius:10px;font-size:.8rem;font-weight:700;color:var(--green);z-index:700;opacity:0;transition:opacity .3s;pointer-events:none;}
+  .toast.show{opacity:1;}
+
+  /* === SETUP SCREEN === */
+  .setup-screen{align-items:center;justify-content:center;gap:16px;text-align:center;padding:20px;}
+  .setup-icon{font-size:3rem;}
+  .setup-title{font-family:'Black Han Sans',sans-serif;font-size:1.4rem;}
+  .setup-desc{font-size:.82rem;color:var(--dim);line-height:1.7;max-width:360px;}
+  .setup-desc a{color:var(--accent);text-decoration:none;}
+  .setup-box{width:100%;max-width:380px;display:flex;flex-direction:column;gap:8px;}
+  .setup-label{font-size:.75rem;font-weight:700;color:var(--dim);text-align:left;letter-spacing:1px;}
+  .setup-textarea{width:100%;min-height:120px;padding:12px;background:var(--card);border:2px solid var(--border);border-radius:12px;color:var(--green);font-family:'Courier New',monospace;font-size:.75rem;outline:none;resize:vertical;transition:border-color .2s;}
+  .setup-textarea:focus{border-color:var(--accent);}
+  .setup-textarea::placeholder{color:var(--dim);}
+  .setup-err{font-size:.78rem;color:var(--red);font-weight:700;min-height:20px;}
+  .setup-or{font-size:.75rem;color:var(--dim);margin:4px 0;}
+  .setup-saved{padding:10px 18px;background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.2);border-radius:10px;color:var(--green);font-size:.8rem;font-weight:700;}
+
+  /* === MODE SELECT === */
+  .mode-screen{align-items:center;justify-content:center;gap:28px;text-align:center;}
+  .mode-logo{font-family:'Black Han Sans',sans-serif;font-size:2.8rem;background:linear-gradient(135deg,#7c5cff,#00e676,#ffd740);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1;}
+  .mode-sub{font-size:.85rem;color:var(--dim);line-height:1.6;}
+  .mode-cards{display:flex;flex-direction:column;gap:14px;width:100%;max-width:340px;}
+  .mode-card{padding:22px 20px;background:var(--card);border:2px solid var(--border);border-radius:16px;cursor:pointer;transition:all .2s;text-align:left;}
+  .mode-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+  .mode-card:active{transform:scale(.98);}
+  .mode-card-icon{font-size:1.8rem;margin-bottom:8px;}
+  .mode-card-title{font-family:'Black Han Sans',sans-serif;font-size:1.2rem;margin-bottom:4px;}
+  .mode-card-desc{font-size:.78rem;color:var(--dim);line-height:1.5;}
+  .online-count{font-size:.8rem;color:var(--dim);font-weight:700;}.online-count span{color:var(--green);font-family:'Orbitron',sans-serif;}
+
+  /* === PASSWORD === */
+  .pw-screen{align-items:center;justify-content:center;gap:20px;text-align:center;}
+  .pw-title{font-family:'Black Han Sans',sans-serif;font-size:1.5rem;}
+  .pw-icon{font-size:3rem;}
+  .pw-input{max-width:200px;text-align:center;font-family:'Orbitron',sans-serif;font-size:1.3rem;letter-spacing:8px;}
+  .pw-err{font-size:.8rem;color:var(--red);font-weight:700;height:20px;}
+
+  /* === PLAYER WAIT === */
+  .wait-screen{align-items:center;justify-content:center;gap:20px;text-align:center;}
+  .player-badge{width:130px;height:130px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;box-shadow:0 0 40px rgba(124,92,255,.3);animation:badgePulse 2s ease-in-out infinite;}
+  @keyframes badgePulse{0%,100%{box-shadow:0 0 40px rgba(124,92,255,.3);}50%{box-shadow:0 0 60px rgba(124,92,255,.5);}}
+  .badge-label{font-size:.6rem;color:rgba(255,255,255,.7);font-weight:700;letter-spacing:2px;}
+  .badge-num{font-family:'Orbitron',sans-serif;font-size:2.8rem;font-weight:900;color:#fff;}
+  .wait-title{font-family:'Black Han Sans',sans-serif;font-size:1.4rem;}
+  .wait-sub{font-size:.85rem;color:var(--dim);line-height:1.6;}
+  .wait-dots{display:flex;gap:8px;justify-content:center;}
+  .wait-dots span{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:dotBounce 1.4s ease-in-out infinite;}
+  .wait-dots span:nth-child(2){animation-delay:.2s;}.wait-dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes dotBounce{0%,80%,100%{transform:scale(.6);opacity:.4;}40%{transform:scale(1);opacity:1;}}
+  .wait-players{font-size:.8rem;color:var(--dim);font-weight:700;}.wait-players span{color:var(--green);font-family:'Orbitron',sans-serif;}
+
+  /* === COUNTDOWN === */
+  .cd-overlay{position:fixed;inset:0;background:rgba(6,6,12,.92);display:none;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:16px;}
+  .cd-overlay.active{display:flex;}
+  .cd-num{font-family:'Black Han Sans',sans-serif;font-size:8rem;background:linear-gradient(135deg,var(--accent),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:cdPop .5s ease;}
+  @keyframes cdPop{0%{transform:scale(1.6);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .cd-label{font-size:1rem;color:var(--dim);font-weight:700;letter-spacing:2px;}
+  .cd-round-info{font-family:'Black Han Sans',sans-serif;font-size:1.2rem;color:var(--gold);}
+
+  /* === GAME === */
+  .game-screen{gap:0;}
+  .game-header{display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 0 10px;}
+  .stat-box{display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .stat-label{font-size:.6rem;color:var(--dim);font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+  .stat-value{font-family:'Black Han Sans',sans-serif;font-size:1.4rem;}
+  .stat-value.timer{color:var(--gold);}.stat-value.score{color:var(--green);}.stat-value.combo{color:var(--accent);}
+  .round-label-game{font-size:.7rem;font-weight:900;color:var(--gold);letter-spacing:2px;text-align:center;padding:4px 0;}
+  .progress-bar{width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--green));border-radius:2px;transition:width .3s linear;}
+  .word-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:0;}
+  .display-word{font-family:'Black Han Sans',sans-serif;font-size:3.8rem;line-height:1.2;text-align:center;padding:0 10px;}
+  .display-word.pop{animation:wPop .25s ease;}
+  @keyframes wPop{0%{transform:scale(.7);opacity:0;}60%{transform:scale(1.05);}100%{transform:scale(1);opacity:1;}}
+  .inst-text{font-size:.75rem;color:var(--dim);font-weight:700;letter-spacing:1px;}
+  .feedback-flash{position:fixed;inset:0;pointer-events:none;z-index:100;opacity:0;transition:opacity .15s;}
+  .feedback-flash.correct{background:radial-gradient(circle,rgba(0,230,118,.15),transparent 70%);opacity:1;}
+  .feedback-flash.wrong{background:radial-gradient(circle,rgba(255,23,68,.15),transparent 70%);opacity:1;}
+  .choices-area{width:100%;padding:8px 0 env(safe-area-inset-bottom,16px);}
+  .choices-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .choice-btn{padding:16px 10px;border:2px solid transparent;border-radius:14px;font-family:'Black Han Sans',sans-serif;font-size:1.1rem;color:#fff;cursor:pointer;transition:transform .08s,opacity .08s;position:relative;overflow:hidden;letter-spacing:1px;}
+  .choice-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,transparent 60%);pointer-events:none;}
+  .choice-btn:active{transform:scale(.95);opacity:.85;}
+  .choice-btn[data-color="빨강"]{background:#d32f2f;border-color:#e53935;}
+  .choice-btn[data-color="파랑"]{background:#1565c0;border-color:#1976d2;}
+  .choice-btn[data-color="초록"]{background:#2e7d32;border-color:#388e3c;}
+  .choice-btn[data-color="노랑"]{background:#f9a825;border-color:#fbc02d;}
+  .choice-btn[data-color="보라"]{background:#7b1fa2;border-color:#8e24aa;}
+  .choice-btn[data-color="주황"]{background:#e65100;border-color:#ef6c00;}
+
+  /* === DONE === */
+  .done-screen{align-items:center;justify-content:center;gap:16px;text-align:center;}
+  .done-grade{font-size:3rem;line-height:1;}
+  .done-title{font-family:'Black Han Sans',sans-serif;font-size:1.5rem;}
+  .done-score-big{font-family:'Orbitron',sans-serif;font-size:2.5rem;font-weight:900;color:var(--green);}
+  .done-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:320px;}
+  .d-stat{padding:12px 8px;background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;gap:3px;align-items:center;}
+  .d-stat .lb{font-size:.6rem;color:var(--dim);font-weight:700;letter-spacing:1px;}
+  .d-stat .vl{font-family:'Black Han Sans',sans-serif;font-size:1.2rem;}
+  .d-stat .vl.green{color:var(--green);}.d-stat .vl.red{color:var(--red);}.d-stat .vl.gold{color:var(--gold);}
+  .submit-ok{padding:10px 18px;border-radius:10px;font-weight:700;font-size:.8rem;background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
+  .waiting-next{margin-top:8px;font-size:.85rem;color:var(--dim);font-weight:700;}
+
+  /* === FINAL PLAYER === */
+  .final-player-screen{align-items:center;justify-content:center;gap:14px;text-align:center;}
+  .final-medal{font-size:4rem;line-height:1;animation:medalPop .6s ease;}
+  @keyframes medalPop{0%{transform:scale(0) rotate(-20deg);opacity:0;}60%{transform:scale(1.2) rotate(5deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
+  .final-rank-text{font-family:'Black Han Sans',sans-serif;font-size:1.6rem;color:var(--gold);}
+  .final-total{font-family:'Orbitron',sans-serif;font-size:2rem;font-weight:900;color:var(--green);}
+  .final-total-label{font-size:.75rem;color:var(--dim);font-weight:700;}
+  .final-rounds{display:flex;gap:10px;width:100%;max-width:300px;}
+  .final-r-card{flex:1;padding:14px 10px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;}
+  .final-r-card .rl{font-size:.65rem;color:var(--dim);font-weight:700;letter-spacing:1px;margin-bottom:4px;}
+  .final-r-card .rv{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.3rem;color:var(--accent);}
+
+  /* === DASHBOARD === */
+  .dash-screen{gap:0;}
+  .dash-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:12px;flex-wrap:wrap;gap:10px;}
+  .dash-header-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .dash-logo{font-family:'Black Han Sans',sans-serif;font-size:1.4rem;background:linear-gradient(135deg,#7c5cff,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .phase-tag{padding:5px 14px;border-radius:8px;font-size:.75rem;font-weight:900;letter-spacing:1px;color:#fff;}
+  .phase-tag.waiting{background:#555;}
+  .phase-tag.playing{background:var(--green);color:#000;animation:phaseGlow 1s ease-in-out infinite;}
+  @keyframes phaseGlow{0%,100%{opacity:1;}50%{opacity:.7;}}
+  .phase-tag.results{background:var(--gold);color:#000;}
+  .phase-tag.final{background:linear-gradient(135deg,var(--gold),var(--bronze));color:#000;}
+  .live-dot{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:700;color:var(--green);}
+  .live-dot::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--green);animation:liveBlink 1.5s ease-in-out infinite;}
+  @keyframes liveBlink{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .dash-header-right{display:flex;align-items:center;gap:8px;}
+  .dash-count{font-size:.78rem;color:var(--dim);font-weight:700;}.dash-count span{color:var(--green);font-family:'Orbitron',sans-serif;font-size:.9rem;}
+  .btn-icon{width:36px;height:36px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--dim);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+  .btn-icon:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-icon.danger:hover{border-color:var(--red);color:var(--red);}
+
+  .ctrl-panel{padding:16px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:14px;display:flex;flex-direction:column;gap:12px;}
+  .ctrl-title{font-family:'Black Han Sans',sans-serif;font-size:1rem;display:flex;align-items:center;gap:8px;}
+  .ctrl-info{font-size:.78rem;color:var(--dim);line-height:1.5;}
+  .ctrl-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .ctrl-label{font-size:.8rem;font-weight:900;min-width:70px;}
+  .btn-go{padding:14px 28px;border:none;border-radius:12px;font-family:'Black Han Sans',sans-serif;font-size:1.1rem;color:#fff;cursor:pointer;letter-spacing:2px;transition:transform .1s;width:100%;}
+  .btn-go:active{transform:scale(.97);}
+  .btn-go:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-go.green{background:linear-gradient(135deg,#00c853,#009624);box-shadow:0 4px 16px rgba(0,200,83,.3);}
+  .btn-go.gold{background:linear-gradient(135deg,#ffd740,#ffab00);color:#000;box-shadow:0 4px 16px rgba(255,215,64,.3);}
+  .btn-go.purple{background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 16px rgba(124,92,255,.3);}
+  .done-count-display{font-size:.85rem;font-weight:700;color:var(--green);}
+
+  .podium-area{display:none;justify-content:center;align-items:flex-end;gap:12px;padding:12px 0 8px;}
+  .podium-area.active{display:flex;}
+  .pod-slot{display:flex;flex-direction:column;align-items:center;gap:5px;animation:podUp .5s ease backwards;}
+  .pod-slot:nth-child(1){animation-delay:.2s;}.pod-slot:nth-child(2){animation-delay:0s;}.pod-slot:nth-child(3){animation-delay:.4s;}
+  @keyframes podUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  .pod-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:1rem;font-weight:900;color:#fff;}
+  .pod-slot:nth-child(1) .pod-avatar{background:linear-gradient(135deg,#ffd740,#ffab00);width:60px;height:60px;font-size:1.3rem;}
+  .pod-slot:nth-child(2) .pod-avatar{background:linear-gradient(135deg,#b0bec5,#78909c);}
+  .pod-slot:nth-child(3) .pod-avatar{background:linear-gradient(135deg,#ff8a65,#e64a19);}
+  .pod-name{font-weight:900;font-size:.75rem;max-width:80px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pod-score{font-family:'Orbitron',sans-serif;font-weight:900;font-size:.75rem;}
+  .pod-slot:nth-child(1) .pod-name,.pod-slot:nth-child(1) .pod-score{color:var(--gold);}
+  .pod-slot:nth-child(2) .pod-name,.pod-slot:nth-child(2) .pod-score{color:var(--silver);}
+  .pod-slot:nth-child(3) .pod-name,.pod-slot:nth-child(3) .pod-score{color:var(--bronze);}
+  .pod-block{width:70px;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.2rem;color:rgba(255,255,255,.4);}
+  .pod-slot:nth-child(1) .pod-block{height:80px;background:linear-gradient(180deg,rgba(255,215,64,.18),rgba(255,215,64,.04));width:90px;}
+  .pod-slot:nth-child(2) .pod-block{height:58px;background:linear-gradient(180deg,rgba(176,190,197,.12),rgba(176,190,197,.02));}
+  .pod-slot:nth-child(3) .pod-block{height:42px;background:linear-gradient(180deg,rgba(255,138,101,.12),rgba(255,138,101,.02));}
+
+  .board-hdr{display:grid;grid-template-columns:44px 1fr 90px 90px 70px;padding:6px 14px;font-size:.6rem;font-weight:900;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--border);}
+  .board-list{flex:1;overflow-y:auto;padding-bottom:16px;}
+  .b-row{display:grid;grid-template-columns:44px 1fr 90px 90px 70px;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(26,26,46,.5);transition:background .2s;}
+  .b-row.t1{background:linear-gradient(90deg,rgba(255,215,64,.08),transparent 60%);}
+  .b-row.t2{background:linear-gradient(90deg,rgba(176,190,197,.06),transparent 60%);}
+  .b-row.t3{background:linear-gradient(90deg,rgba(255,138,101,.05),transparent 60%);}
+  .b-rank{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1rem;text-align:center;}
+  .b-rank.r1{color:var(--gold);}.b-rank.r2{color:var(--silver);}.b-rank.r3{color:var(--bronze);}.b-rank.rn{color:var(--dim);font-size:.85rem;}
+  .b-medal{font-size:1.2rem;}
+  .b-name{font-weight:900;font-size:.95rem;padding-left:4px;}
+  .t1 .b-name{color:var(--gold);}.t2 .b-name{color:var(--silver);}.t3 .b-name{color:var(--bronze);}
+  .b-sc{font-family:'Orbitron',sans-serif;font-weight:900;font-size:.85rem;text-align:right;padding-right:4px;}
+  .b-sc.green{color:var(--green);}.b-sc.dim{color:var(--dim);font-size:.75rem;}
+  .b-total{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1rem;color:var(--green);text-align:right;padding-right:4px;}
+  .b-sfx{font-family:'Noto Sans KR',sans-serif;font-size:.55rem;color:var(--dim);font-weight:700;margin-left:1px;}
+
+  .empty-dash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--dim);}
+  .empty-dash .ei{font-size:3rem;opacity:.4;}.empty-dash .et{font-size:1rem;font-weight:700;}.empty-dash .es{font-size:.8rem;}
+
+  .overlay{position:fixed;inset:0;background:rgba(6,6,12,.85);display:none;align-items:center;justify-content:center;z-index:500;backdrop-filter:blur(4px);}
+  .overlay.active{display:flex;}
+  .dialog{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;width:290px;text-align:center;display:flex;flex-direction:column;gap:16px;}
+  .dialog p{font-weight:700;line-height:1.6;}
+  .dialog-btns{display:flex;gap:8px;}
+  .dialog-btns button{flex:1;padding:12px;border-radius:10px;font-weight:900;font-size:.85rem;cursor:pointer;}
+  .dbtn-cancel{background:var(--surface);border:1px solid var(--border);color:var(--text);}
+  .dbtn-ok{background:var(--red);border:none;color:#fff;}
+
+  .fireworks{position:fixed;inset:0;pointer-events:none;z-index:50;}
+  .fireworks.active{animation:fwBg 3s ease;}
+  @keyframes fwBg{0%{background:rgba(255,215,64,.05);}50%{background:rgba(124,92,255,.03);}100%{background:transparent;}}
+
+  .board-list::-webkit-scrollbar{width:4px;}.board-list::-webkit-scrollbar-track{background:transparent;}.board-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+
+  <!-- 1. MODE SELECT -->
+  <div class="screen mode-screen active" id="modeScreen">
+    <div class="mode-logo">🧠 스트룹<br>테스트</div>
+    <p class="mode-sub">글자의 색깔을 맞추는 두뇌 게임</p>
+    <div class="online-count">현재 접속: <span id="onlineCount">0</span>명</div>
+    <div class="mode-cards">
+      <div class="mode-card" onclick="enterPlayer()">
+        <div class="mode-card-icon">🎮</div>
+        <div class="mode-card-title">플레이어 입장</div>
+        <div class="mode-card-desc">핸드폰으로 게임에 참여합니다<br>자동으로 번호가 발급됩니다</div>
+      </div>
+      <div class="mode-card" onclick="showScreen('pwScreen')">
+        <div class="mode-card-icon">📊</div>
+        <div class="mode-card-title">교수자 입장</div>
+        <div class="mode-card-desc">게임 진행을 통제하고 순위를 표시합니다</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. PASSWORD -->
+  <div class="screen pw-screen" id="pwScreen">
+    <div class="pw-icon">🔒</div>
+    <div class="pw-title">교수자 비밀번호</div>
+    <input class="input-f pw-input" id="pwInput" type="password" maxlength="10" placeholder="····" inputmode="numeric">
+    <div class="pw-err" id="pwErr"></div>
+    <button class="btn-primary" onclick="checkPw()" style="max-width:200px;">입 장</button>
+    <button class="btn-secondary" onclick="showScreen('modeScreen')" style="margin-top:4px;">← 돌아가기</button>
+  </div>
+
+  <!-- 3. PLAYER WAIT -->
+  <div class="screen wait-screen" id="waitScreen">
+    <div class="player-badge">
+      <div class="badge-label">PLAYER</div>
+      <div class="badge-num" id="myNum">?</div>
+    </div>
+    <div class="wait-title" id="waitTitle">대기 중...</div>
+    <div class="wait-sub" id="waitSub">교수자가 게임을 시작하면<br>자동으로 플레이가 시작됩니다</div>
+    <div class="wait-dots"><span></span><span></span><span></span></div>
+    <div class="wait-players">접속 인원 <span id="waitCount">0</span>명</div>
+  </div>
+
+  <!-- 4. COUNTDOWN -->
+  <div class="cd-overlay" id="cdOverlay">
+    <div class="cd-round-info" id="cdRoundInfo">라운드 1 · 보통 · 30초</div>
+    <div class="cd-label">준비하세요</div>
+    <div class="cd-num" id="cdNum">3</div>
+  </div>
+
+  <!-- 5. GAME -->
+  <div class="screen game-screen" id="gameScreen">
+    <div class="round-label-game" id="gRoundLabel">ROUND 1</div>
+    <div class="game-header">
+      <div class="stat-box"><span class="stat-label">시간</span><span class="stat-value timer" id="gTimer">30</span></div>
+      <div class="stat-box"><span class="stat-label">콤보</span><span class="stat-value combo" id="gCombo">0</span></div>
+      <div class="stat-box"><span class="stat-label">점수</span><span class="stat-value score" id="gScore">0</span></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="gProgress" style="width:100%"></div></div>
+    <div class="word-area">
+      <div class="display-word" id="gWord">빨강</div>
+      <div class="inst-text">👆 글자의 색깔을 고르세요</div>
+    </div>
+    <div class="choices-area"><div class="choices-grid" id="gChoices"></div></div>
+  </div>
+  <div class="feedback-flash" id="flash"></div>
+
+  <!-- 6. DONE -->
+  <div class="screen done-screen" id="doneScreen">
+    <div class="done-grade" id="doneGrade">✅</div>
+    <div class="done-title" id="doneTitle">라운드 1 완료!</div>
+    <div class="done-score-big" id="doneScore">0</div>
+    <div class="done-stats">
+      <div class="d-stat"><span class="lb">정답</span><span class="vl green" id="doneOk">0</span></div>
+      <div class="d-stat"><span class="lb">오답</span><span class="vl red" id="doneNo">0</span></div>
+      <div class="d-stat"><span class="lb">콤보</span><span class="vl gold" id="doneCb">0</span></div>
+    </div>
+    <div class="submit-ok">✅ 결과가 자동 전송되었습니다</div>
+    <div class="waiting-next" id="doneWaitMsg">교수자가 다음 라운드를 시작할 때까지 대기 중...</div>
+    <div class="wait-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <!-- 7. FINAL PLAYER -->
+  <div class="screen final-player-screen" id="finalPlayerScreen">
+    <div class="final-medal" id="fpMedal">🏆</div>
+    <div class="final-rank-text" id="fpRank">1위</div>
+    <div class="final-total-label">합산 점수</div>
+    <div class="final-total" id="fpTotal">0</div>
+    <div class="final-rounds">
+      <div class="final-r-card"><div class="rl">ROUND 1</div><div class="rv" id="fpR1">0</div></div>
+      <div class="final-r-card"><div class="rl">ROUND 2</div><div class="rv" id="fpR2">0</div></div>
+    </div>
+    <button class="btn-primary" onclick="location.reload()" style="max-width:280px;margin-top:10px;">처음으로 🔄</button>
+  </div>
+
+  <!-- 8. DASHBOARD -->
+  <div class="screen dash-screen" id="dashScreen">
+    <div class="dash-header">
+      <div class="dash-header-left">
+        <div class="dash-logo">🧠 스트룹 테스트</div>
+        <div class="phase-tag waiting" id="dashPhase">대기</div>
+        <div class="live-dot">실시간</div>
+      </div>
+      <div class="dash-header-right">
+        <div class="dash-count">참가자 <span id="dashCount">0</span>명</div>
+        <button class="btn-icon" onclick="exportDash()" title="결과 복사">📋</button>
+        <button class="btn-icon danger" onclick="confirmReset()" title="전체 초기화">🗑️</button>
+      </div>
+    </div>
+    <div class="ctrl-panel" id="ctrlPanel"></div>
+    <div class="podium-area" id="dashPodium"></div>
+    <div class="board-hdr" id="dashBoardHdr" style="display:none;">
+      <div>순위</div><div>이름</div><div style="text-align:right;padding-right:4px;">R1</div><div style="text-align:right;padding-right:4px;">R2</div><div style="text-align:right;padding-right:4px;">합산</div>
+    </div>
+    <div class="board-list" id="dashBoardList">
+      <div class="empty-dash"><div class="ei">⏳</div><div class="et">플레이어를 기다리는 중...</div><div class="es">학생들이 접속하면 자동으로 표시됩니다</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="overlay" id="confirmOverlay">
+  <div class="dialog">
+    <p>모든 기록을 초기화하시겠습니까?</p>
+    <div class="dialog-btns">
+      <button class="dbtn-cancel" onclick="closeConfirm()">취소</button>
+      <button class="dbtn-ok" onclick="doReset()">초기화</button>
+    </div>
+  </div>
+</div>
+<div class="fireworks" id="fireworks"></div>
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+// ══════════════════════════════════
+//  FIREBASE & DB
+// ══════════════════════════════════
+let db = null;
+const ROOM = 'stroop_game';
+
+function ref(path){ return db.ref(ROOM+'/'+path); }
+
+// ── Hardcoded Firebase Config ──
+const firebaseConfig = {
+  apiKey: "AIzaSyArm81EuchB3vLytGjke50Wvks7C_zITx4",
+  authDomain: "stroop-game-4ab23.firebaseapp.com",
+  databaseURL: "https://stroop-game-4ab23-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "stroop-game-4ab23",
+  storageBucket: "stroop-game-4ab23.firebasestorage.app",
+  messagingSenderId: "735431464416",
+  appId: "1:735431464416:web:ed4b776dfb2609a5734785"
+};
+
+// ── Auto-init on load ──
+window.addEventListener('DOMContentLoaded', ()=>{
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    showScreen('modeScreen');
+    listenOnlineCount();
+  } catch(e){
+    console.error('Firebase init error:', e);
+  }
+});
+
+function listenOnlineCount(){
+  ref('players').on('value', snap=>{
+    const count = snap.exists() ? Object.keys(snap.val()).length : 0;
+    const el1 = document.getElementById('onlineCount');
+    const el2 = document.getElementById('waitCount');
+    if(el1) el1.textContent=count;
+    if(el2) el2.textContent=count;
+  });
+}
+
+// ══════════════════════════════════
+//  SCREENS
+// ══════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ══════════════════════════════════
+//  PASSWORD
+// ══════════════════════════════════
+const PW='6725';
+document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')checkPw();});
+function checkPw(){
+  if(document.getElementById('pwInput').value===PW){document.getElementById('pwErr').textContent='';enterTeacher();}
+  else{document.getElementById('pwErr').textContent='비밀번호가 틀립니다';document.getElementById('pwInput').value='';}
+}
+
+// ══════════════════════════════════
+//  PLAYER
+// ══════════════════════════════════
+let myId=null, mode=null;
+
+async function enterPlayer(){
+  mode='player';
+
+  // Transaction to get unique ID
+  const idRef = ref('nextId');
+  const result = await idRef.transaction(current => (current||0)+1);
+  myId = result.snapshot.val();
+
+  // Register
+  await ref('players/'+myId).set({ id:myId, name:'Player '+myId, r1:null, r2:null, ts:Date.now() });
+
+  document.getElementById('myNum').textContent=myId;
+  showScreen('waitScreen');
+
+  // Listen for game control changes
+  ref('ctrl').on('value', snap=>{
+    if(!snap.exists()) return;
+    const c = snap.val();
+    handlePlayerCtrl(c);
+  });
+}
+
+let currentPlayingRound = null;
+
+async function handlePlayerCtrl(c){
+  const screen = document.querySelector('.screen.active')?.id;
+
+  if(c.phase==='playing' && c.round !== currentPlayingRound){
+    // Check if already submitted this round
+    const pSnap = await ref('players/'+myId).once('value');
+    const pData = pSnap.val()||{};
+    if(pData['r'+c.round]?.done){
+      showDoneScreen(c.round, pData['r'+c.round]);
+      return;
+    }
+    // Start game
+    currentPlayingRound = c.round;
+    startPlayerGame(c);
+  }
+  else if((c.phase==='round1done'||c.phase==='round2done') && screen==='doneScreen'){
+    // Stays on done screen
+  }
+  else if(c.phase==='final'){
+    if(screen!=='finalPlayerScreen') showFinalPlayer();
+  }
+}
+
+function showDoneScreen(round, data){
+  showScreen('doneScreen');
+  document.getElementById('doneTitle').textContent='라운드 '+round+' 완료!';
+  document.getElementById('doneScore').textContent=data.score;
+  document.getElementById('doneOk').textContent=data.correct;
+  document.getElementById('doneNo').textContent=data.wrong;
+  document.getElementById('doneCb').textContent=data.maxCombo;
+  document.getElementById('doneWaitMsg').textContent = round===1
+    ? '교수자가 라운드 2를 시작할 때까지 대기 중...'
+    : '최종 결과 발표를 기다리는 중...';
+}
+
+async function showFinalPlayer(){
+  showScreen('finalPlayerScreen');
+  const snap = await ref('players/'+myId).once('value');
+  const d = snap.val()||{};
+  const r1=d.r1?.score||0, r2=d.r2?.score||0, total=r1+r2;
+
+  document.getElementById('fpR1').textContent=r1.toLocaleString();
+  document.getElementById('fpR2').textContent=r2.toLocaleString();
+  document.getElementById('fpTotal').textContent=total.toLocaleString();
+
+  // Rank
+  const allSnap = await ref('players').once('value');
+  const all = allSnap.val()||{};
+  const entries=Object.values(all).map(e=>({id:e.id,total:(e.r1?.score||0)+(e.r2?.score||0)}));
+  entries.sort((a,b)=>b.total-a.total);
+  const rank=entries.findIndex(e=>e.id===myId)+1;
+
+  let medal='🎖️';
+  if(rank===1)medal='🥇';else if(rank===2)medal='🥈';else if(rank===3)medal='🥉';else if(rank<=5)medal='🏅';
+  document.getElementById('fpMedal').textContent=medal;
+  document.getElementById('fpRank').textContent=entries.length+'명 중 '+rank+'위!';
+
+  document.getElementById('fireworks').classList.add('active');
+  setTimeout(()=>document.getElementById('fireworks').classList.remove('active'),3000);
+}
+
+// ══════════════════════════════════
+//  GAME LOGIC
+// ══════════════════════════════════
+const COLORS={'빨강':'#d32f2f','파랑':'#1565c0','초록':'#2e7d32','노랑':'#f9a825','보라':'#7b1fa2','주황':'#e65100'};
+const EASY=['빨강','파랑','초록','노랑'], HARD=['빨강','파랑','초록','노랑','보라','주황'];
+let colorNames=EASY,score=0,correct=0,wrong=0,combo=0,maxCombo=0,qNum=0,currentAnswer='',gTimerInterval=null,timeLeft=30;
+
+function startPlayerGame(ctrl){
+  const diff=ctrl.difficulty, time=ctrl.time, round=ctrl.round;
+  colorNames=diff==='hard'?HARD:EASY;
+  score=0;correct=0;wrong=0;combo=0;maxCombo=0;qNum=0;timeLeft=time;
+
+  const diffLabel=diff==='hard'?'어려움':'보통';
+  const info=`라운드 ${round} · ${diffLabel} · ${time}초`;
+  document.getElementById('cdRoundInfo').textContent=info;
+  document.getElementById('gRoundLabel').textContent=`ROUND ${round} · ${diffLabel} · ${time}초`;
+
+  // Countdown
+  const ol=document.getElementById('cdOverlay'),nm=document.getElementById('cdNum');
+  ol.classList.add('active');
+  let cnt=3;nm.textContent=cnt;nm.style.animation='none';void nm.offsetWidth;nm.style.animation='cdPop .5s ease';
+  const iv=setInterval(()=>{cnt--;if(cnt<=0){clearInterval(iv);ol.classList.remove('active');beginGame(ctrl);}
+  else{nm.textContent=cnt;nm.style.animation='none';void nm.offsetWidth;nm.style.animation='cdPop .5s ease';}},700);
+}
+
+function beginGame(ctrl){
+  showScreen('gameScreen');
+  document.getElementById('gTimer').textContent=timeLeft;
+  document.getElementById('gTimer').style.color='var(--gold)';
+  document.getElementById('gScore').textContent=0;
+  document.getElementById('gCombo').textContent=0;
+  document.getElementById('gProgress').style.width='100%';
+  buildChoices();nextQ();
+
+  const totalTime=ctrl.time;
+  gTimerInterval=setInterval(()=>{
+    timeLeft--;
+    document.getElementById('gTimer').textContent=timeLeft;
+    document.getElementById('gProgress').style.width=(timeLeft/totalTime*100)+'%';
+    if(timeLeft<=10)document.getElementById('gTimer').style.color='var(--red)';
+    if(timeLeft<=0){clearInterval(gTimerInterval);endPlayerGame(ctrl);}
+  },1000);
+}
+
+function buildChoices(){const g=document.getElementById('gChoices');g.innerHTML='';colorNames.forEach(n=>{const b=document.createElement('button');b.className='choice-btn';b.dataset.color=n;b.textContent=n;b.addEventListener('click',()=>handleAns(n));g.appendChild(b);});}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function pickD(a,x){return pick(a.filter(i=>i!==x));}
+function nextQ(){qNum++;let w,ic;if(Math.random()<.2){w=pick(colorNames);ic=w;}else{w=pick(colorNames);ic=pickD(colorNames,w);}currentAnswer=ic;const el=document.getElementById('gWord');el.textContent=w;el.style.color=COLORS[ic];el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}
+function handleAns(ch){const fl=document.getElementById('flash');if(ch===currentAnswer){correct++;combo++;if(combo>maxCombo)maxCombo=combo;score+=100+Math.min(combo-1,10)*5;fl.className='feedback-flash correct';}else{wrong++;combo=0;score=Math.max(0,score-30);fl.className='feedback-flash wrong';}setTimeout(()=>{fl.className='feedback-flash';},200);document.getElementById('gScore').textContent=score;document.getElementById('gCombo').textContent=combo;nextQ();}
+
+async function endPlayerGame(ctrl){
+  const round=ctrl.round;
+  const total=correct+wrong;
+  const accuracy=total>0?Math.round(correct/total*100):0;
+  const result={score,correct,wrong,accuracy,maxCombo,done:true};
+
+  await ref('players/'+myId+'/r'+round).set(result);
+  showDoneScreen(round, result);
+}
+
+// ══════════════════════════════════
+//  TEACHER
+// ══════════════════════════════════
+function enterTeacher(){
+  mode='teacher';
+  document.getElementById('app').classList.add('wide');
+  showScreen('dashScreen');
+
+  // Init ctrl if not set
+  ref('ctrl').once('value').then(snap=>{
+    if(!snap.exists()){
+      ref('ctrl').set({phase:'waiting',round:0,difficulty:'easy',time:30});
+    }
+  });
+
+  // Listen ctrl for rendering
+  ref('ctrl').on('value', snap=>{
+    if(!snap.exists()) return;
+    renderCtrl(snap.val());
+  });
+
+  // Listen players for board
+  ref('players').on('value', snap=>{
+    const data = snap.val()||{};
+    renderBoard(Object.values(data));
+  });
+}
+
+let r2SelectedTime=30;
+
+function renderCtrl(c){
+  const phase=c.phase||'waiting';
+  const panel=document.getElementById('ctrlPanel');
+  const ptag=document.getElementById('dashPhase');
+
+  if(phase==='waiting'){ptag.className='phase-tag waiting';ptag.textContent='대기';}
+  else if(phase==='playing'){ptag.className='phase-tag playing';ptag.textContent='R'+c.round+' 진행';}
+  else if(phase==='round1done'){ptag.className='phase-tag results';ptag.textContent='R1 결과';}
+  else if(phase==='round2done'){ptag.className='phase-tag results';ptag.textContent='R2 결과';}
+  else if(phase==='final'){ptag.className='phase-tag final';ptag.textContent='최종 결과';}
+
+  if(phase==='waiting'){
+    panel.innerHTML=`
+      <div class="ctrl-title">🎮 라운드 1 준비</div>
+      <div class="ctrl-info">난이도: <strong>보통</strong> (4색) · 시간: <strong>30초</strong><br>모든 학생이 접속했는지 확인 후 시작하세요</div>
+      <button class="btn-go green" onclick="startRound(1,'easy',30)">▶ 라운드 1 시작</button>`;
+  } else if(phase==='playing'){
+    panel.innerHTML=`
+      <div class="ctrl-title">🔥 라운드 ${c.round} 진행 중</div>
+      <div class="done-count-display" id="doneCountDisplay">완료 집계 중...</div>
+      <button class="btn-go gold" onclick="endRound(${c.round})">⏹ 라운드 종료 → 결과 보기</button>`;
+    updateDoneCount(c.round);
+  } else if(phase==='round1done'){
+    panel.innerHTML=`
+      <div class="ctrl-title">📊 라운드 1 결과</div>
+      <div class="ctrl-info">라운드 2 설정 후 시작하세요</div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">난이도</span>
+        <span style="font-size:.8rem;color:var(--text);font-weight:700;">어려움 (6색) 고정</span>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">시간</span>
+        <div style="display:flex;gap:6px;" id="r2TimeOpts">
+          <button class="s-btn ${r2SelectedTime===30?'active':''}" data-val="30" onclick="selR2Time(this)">30초</button>
+          <button class="s-btn ${r2SelectedTime===60?'active':''}" data-val="60" onclick="selR2Time(this)">60초</button>
+        </div>
+      </div>
+      <button class="btn-go green" onclick="startRound(2,'hard',r2SelectedTime)">▶ 라운드 2 시작</button>`;
+  } else if(phase==='round2done'){
+    panel.innerHTML=`
+      <div class="ctrl-title">📊 라운드 2 결과</div>
+      <div class="ctrl-info">최종 합산 결과를 발표하세요!</div>
+      <button class="btn-go purple" onclick="goFinal()">🏆 최종 결과 발표</button>`;
+  } else if(phase==='final'){
+    panel.innerHTML=`
+      <div class="ctrl-title">🏆 최종 결과 발표!</div>
+      <div class="ctrl-info">시상이 완료되면 초기화하세요</div>
+      <button class="btn-go green" onclick="confirmReset()">🔄 전체 초기화 (새 게임)</button>`;
+  }
+}
+
+async function updateDoneCount(round){
+  const snap = await ref('players').once('value');
+  const data=snap.val()||{};
+  const all=Object.values(data);
+  const done=all.filter(p=>p['r'+round]?.done).length;
+  const el=document.getElementById('doneCountDisplay');
+  if(el) el.textContent=`완료: ${done} / ${all.length}명`;
+}
+
+function selR2Time(btn){
+  document.querySelectorAll('#r2TimeOpts .s-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  r2SelectedTime=parseInt(btn.dataset.val);
+}
+
+function startRound(round,diff,time){
+  ref('ctrl').set({phase:'playing',round,difficulty:diff,time,startedAt:Date.now()});
+}
+function endRound(round){
+  const phase=round===1?'round1done':'round2done';
+  ref('ctrl').update({phase,startedAt:null});
+}
+function goFinal(){
+  ref('ctrl').update({phase:'final'});
+  document.getElementById('fireworks').classList.add('active');
+  setTimeout(()=>document.getElementById('fireworks').classList.remove('active'),3000);
+}
+
+// ══════════════════════════════════
+//  DASHBOARD BOARD
+// ══════════════════════════════════
+function renderBoard(players){
+  players.sort((a,b)=>((b.r1?.score||0)+(b.r2?.score||0))-((a.r1?.score||0)+(a.r2?.score||0)));
+  document.getElementById('dashCount').textContent=players.length;
+
+  const hdr=document.getElementById('dashBoardHdr');
+  const list=document.getElementById('dashBoardList');
+
+  if(players.length===0){
+    hdr.style.display='none';
+    list.innerHTML='<div class="empty-dash"><div class="ei">⏳</div><div class="et">플레이어를 기다리는 중...</div><div class="es">학생들이 접속하면 자동으로 표시됩니다</div></div>';
+    document.getElementById('dashPodium').classList.remove('active');
+    return;
+  }
+  hdr.style.display='grid';
+  list.innerHTML='';
+
+  players.forEach((e,i)=>{
+    const rank=i+1;
+    const row=document.createElement('div');
+    row.className='b-row';
+    if(rank===1)row.classList.add('t1');if(rank===2)row.classList.add('t2');if(rank===3)row.classList.add('t3');
+
+    let rh;if(rank===1)rh='<span class="b-medal">🥇</span>';else if(rank===2)rh='<span class="b-medal">🥈</span>';else if(rank===3)rh='<span class="b-medal">🥉</span>';else rh=rank;
+    const rc=rank<=3?'r'+rank:'rn';
+    const r1s=e.r1?.score,r2s=e.r2?.score,total=(r1s||0)+(r2s||0);
+    const nm=e.name||('Player '+e.id);
+
+    row.innerHTML=`
+      <div class="b-rank ${rc}">${rh}</div>
+      <div class="b-name">${esc(nm)}</div>
+      <div class="b-sc ${r1s!=null?'green':'dim'}" style="text-align:right;padding-right:4px;">${r1s!=null?r1s.toLocaleString():'—'}</div>
+      <div class="b-sc ${r2s!=null?'green':'dim'}" style="text-align:right;padding-right:4px;">${r2s!=null?r2s.toLocaleString():'—'}</div>
+      <div class="b-total">${total.toLocaleString()}<span class="b-sfx">점</span></div>`;
+    list.appendChild(row);
+  });
+
+  // Podium
+  renderPodium(players);
+}
+
+function renderPodium(entries){
+  const area=document.getElementById('dashPodium');
+  if(entries.length<2){area.classList.remove('active');return;}
+  area.classList.add('active');area.innerHTML='';
+  const top=entries.slice(0,Math.min(3,entries.length));
+  const order=top.length>=3?[top[1],top[0],top[2]]:(top.length===2?[top[1],top[0]]:[top[0]]);
+  const labels=top.length>=3?['2','1','3']:(top.length===2?['2','1']:['1']);
+  order.forEach((e,idx)=>{
+    if(!e)return;
+    const nm=e.name||('P'+e.id);
+    const total=(e.r1?.score||0)+(e.r2?.score||0);
+    const sl=document.createElement('div');sl.className='pod-slot';
+    sl.innerHTML=`<div class="pod-avatar">${nm.charAt(0)}</div><div class="pod-name">${esc(nm)}</div><div class="pod-score">${total.toLocaleString()}</div><div class="pod-block">${labels[idx]}</div>`;
+    area.appendChild(sl);
+  });
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+// ══════════════════════════════════
+//  ACTIONS
+// ══════════════════════════════════
+function confirmReset(){document.getElementById('confirmOverlay').classList.add('active');}
+function closeConfirm(){document.getElementById('confirmOverlay').classList.remove('active');}
+async function doReset(){
+  closeConfirm();
+  await ref('players').remove();
+  await ref('ctrl').set({phase:'waiting',round:0,difficulty:'easy',time:30});
+  await ref('nextId').set(0);
+  showToast('모든 기록이 초기화되었습니다');
+}
+
+async function exportDash(){
+  const snap=await ref('players').once('value');
+  const data=snap.val()||{};
+  const entries=Object.values(data);
+  entries.sort((a,b)=>((b.r1?.score||0)+(b.r2?.score||0))-((a.r1?.score||0)+(a.r2?.score||0)));
+  if(entries.length===0){showToast('기록이 없습니다');return;}
+  let text='🧠 스트룹 테스트 최종 순위\n━━━━━━━━━━━━━━━━━━━━\n';
+  entries.forEach((e,i)=>{
+    const r=i+1;let m=r===1?'🥇 ':r===2?'🥈 ':r===3?'🥉 ':r+'위 ';
+    const total=(e.r1?.score||0)+(e.r2?.score||0);
+    text+=`${m}${e.name||'Player '+e.id} — ${total.toLocaleString()}점 (R1:${e.r1?.score||0} R2:${e.r2?.score||0})\n`;
+  });
+  text+='━━━━━━━━━━━━━━━━━━━━';
+  try{await navigator.clipboard.writeText(text);showToast('복사되었습니다!');}
+  catch{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('복사되었습니다!');}
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+</script>
+</body>
+</html>
